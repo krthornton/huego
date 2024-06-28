@@ -2,8 +2,8 @@ package menu
 
 import (
 	"fmt"
-	"huego-cli/internal/config"
-	"huego-cli/internal/hue"
+	"huego/internal/config"
+	"huego/internal/hue"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"

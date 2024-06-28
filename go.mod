@@ -1,4 +1,4 @@
-module huego-cli
+module huego
 
 go 1.21.10
 

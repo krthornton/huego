@@ -1,6 +1,6 @@
 package config
 
-import "huego-cli/internal/hue"
+import "huego/internal/hue"
 
 type ProgramState struct {
 	Config   *Configuration

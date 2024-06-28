@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"huego-cli/internal/config"
-	"huego-cli/internal/menu"
+	"huego/internal/config"
+	"huego/internal/menu"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

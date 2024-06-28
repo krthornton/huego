@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"huego-cli/internal/hue"
+	"huego/internal/hue"
 )
 
 type DeviceDb struct {

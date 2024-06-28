@@ -2,7 +2,7 @@ package menu
 
 import (
 	"fmt"
-	"huego-cli/internal/config"
+	"huego/internal/config"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -40,7 +40,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m mainModel) View() string {
 	childContent := m.currentMenu.View()
-	content := fmt.Sprintf("huego-cli\n\n%s\n", childContent)
+	content := fmt.Sprintf("huego\n\n%s\n", childContent)
 	return content
 }
 

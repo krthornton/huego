@@ -3,7 +3,7 @@ package menu
 import (
 	"fmt"
 
-	"huego-cli/internal/config"
+	"huego/internal/config"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
