@@ -36,6 +36,7 @@ func (d *DeviceDb) FetchDevices() {
 			d.conn,
 			resMap["id"].(string),
 			resMap["on"].(map[string]interface{})["on"].(bool),
+			resMap["dimming"].(map[string]interface{})["brightness"].(float64),
 			resMap["metadata"].(map[string]interface{})["name"].(string),
 		)
 		devices = append(devices, device)

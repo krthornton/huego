@@ -36,11 +36,33 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.state.DeviceDb.GetDevices()) {
 				m.cursor++
 			}
+		case "left":
+			return m, func() tea.Msg {
+				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
+				currentBrightness := int(light.Brightness())
+				desiredBrightness := ((currentBrightness / 10) - 1) * 10
+				if desiredBrightness < 0 {
+					desiredBrightness = 0
+				}
+				light.ChangeBrightness(float64(desiredBrightness))
+				return desiredBrightness
+			}
+		case "right":
+			return m, func() tea.Msg {
+				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
+				currentBrightness := int(light.Brightness())
+				desiredBrightness := ((currentBrightness / 10) + 1) * 10
+				if desiredBrightness > 100 {
+					desiredBrightness = 100
+				}
+				light.ChangeBrightness(float64(desiredBrightness))
+				return desiredBrightness
+			}
 		case " ":
 			return m, func() tea.Msg {
 				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
 				light.ChangePowerState(!light.IsPoweredOn())
-				return light
+				return light.IsPoweredOn()
 			}
 		}
 	}
@@ -66,13 +88,17 @@ func (m devicesModel) View() string {
 			if !light.IsPoweredOn() {
 				powerText = "Off"
 			}
-			content = fmt.Sprintf("%s %s %d. %s - %s\n", content, cursorText, item, light.Name(), powerText)
+			content = fmt.Sprintf("%s %s %d. %s - %s", content, cursorText, item, light.Name(), powerText)
+			if light.IsPoweredOn() {
+				content = fmt.Sprintf("%s - %d%%", content, int(light.Brightness()))
+			}
+			content = fmt.Sprintf("%s\n", content)
 			item++
 		}
 	} else {
 		header = "Fetching devices from hue bridge..."
 	}
-	footer := "Use arrows to change selection || Press space to toggle power || Press 'CTRL+C' or 'q' to quit"
+	footer := "↑↓ to change selection || space to toggle power || ←→ to change brightness || 'q' to quit"
 
 	return fmt.Sprintf("%s\n%s\n%s", header, content, footer)
 }
