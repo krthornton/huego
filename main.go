@@ -31,6 +31,21 @@ func main() {
 		panic(err.Error())
 	}
 
+	// if we've auth'd with a new hub, let's make sure to save it
+	defined := false
+	for _, hub := range conf.Hubs {
+		if hub.IpAddress == state.Conn.GetIpAddress() {
+			defined = true
+			break
+		}
+	}
+	if !defined {
+		conf.Hubs = append(conf.Hubs, config.Hub{
+			IpAddress: state.Conn.GetIpAddress(),
+			ApiKey:    state.Conn.GetApiKey(),
+		})
+	}
+
 	// main loop has exited, let's save config back to disk
-	config.SaveConfiguration(conf)
+	conf.SaveConfiguration()
 }

@@ -63,7 +63,7 @@ func LoadConfiguration() (Configuration, error) {
 	}
 }
 
-func SaveConfiguration(config Configuration) {
+func (c Configuration) SaveConfiguration() {
 	configFilePath := getConfigFilePath()
 	parentDir := filepath.Dir(configFilePath)
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
@@ -78,7 +78,7 @@ func SaveConfiguration(config Configuration) {
 	}
 
 	// parent config dir exists; write config file
-	bytes, err := json.Marshal(config)
+	bytes, err := json.Marshal(c)
 	if err != nil {
 		panic("Failed to marshal configuration")
 	}

@@ -26,6 +26,7 @@ func InitDiscoveryModel(state *config.ProgramState) discoveryModel {
 
 func (m discoveryModel) initDiscovery() tea.Msg {
 	ipAddr := hue.DiscoverIpAddress()
+	m.state.Conn.SetIpAddress(ipAddr)
 
 	var apiKey string
 	for _, savedHub := range m.state.Config.Hubs {
@@ -36,24 +37,34 @@ func (m discoveryModel) initDiscovery() tea.Msg {
 	}
 
 	if apiKey == "" {
-		// TODO: implement method for authenticating with new hub
-		panic("API key not found for discovered hub")
+		// we have not authenticated with this hub yet
+		return "Unauthenticated"
 	}
 
+	// we've already authenticated with the discovered hub
 	m.state.Conn.SetApiKey(apiKey)
-	m.state.Conn.SetIpAddress(ipAddr)
 
-	return "IP address discovered"
+	return "Authenticated"
 }
 
 func (m discoveryModel) Init() tea.Cmd {
-	return tea.Batch(m.initDiscovery, m.spinner.Tick)
+	return tea.Batch(
+		m.initDiscovery,
+		m.spinner.Tick,
+	)
 }
 
 func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if ipAddr := m.state.Conn.GetIpAddress(); ipAddr != "" {
-		return m, func() tea.Msg {
-			return InitDevicesModel(m.state)
+	switch msg := msg.(type) {
+	case string:
+		if msg == "Authenticated" {
+			return m, func() tea.Msg {
+				return InitDevicesModel(m.state)
+			}
+		} else if msg == "Unauthenticated" {
+			return m, func() tea.Msg {
+				return InitAuthenticationModel(m.state)
+			}
 		}
 	}
 

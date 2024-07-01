@@ -58,6 +58,10 @@ func (c HueConnection) GetIpAddress() string {
 	return c.ipAddr
 }
 
+func (c HueConnection) GetApiKey() string {
+	return c.apiKey
+}
+
 func (c *HueConnection) SetIpAddress(ipAddr string) {
 	c.ipAddr = ipAddr
 }

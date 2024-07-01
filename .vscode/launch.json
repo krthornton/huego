@@ -13,7 +13,7 @@
             "port": 43000,
             "host": "127.0.0.1", // can skip for localhost
             "substitutePath": [
-              { "from": "${workspaceFolder}", "to": "/home/krthornton/Projects/huego-cli" },
+              { "from": "${workspaceFolder}", "to": "/home/krthornton/Projects/huego" },
             ],
             "preLaunchTask": "launch headless delve"
         }
