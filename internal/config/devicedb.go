@@ -48,3 +48,7 @@ func (d *DeviceDb) FetchDevices() {
 func (d DeviceDb) GetDevices() []*hue.Device {
 	return *d.devices
 }
+
+func (d DeviceDb) GetDevice(index int) *hue.Device {
+	return (*d.devices)[index]
+}

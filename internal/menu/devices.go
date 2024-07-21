@@ -38,7 +38,10 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "left":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
+				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
+				if !light.IsPoweredOn() {
+					return nil
+				}
 				currentBrightness := int(light.Brightness())
 				desiredBrightness := ((currentBrightness / 10) - 1) * 10
 				if desiredBrightness < 0 {
@@ -49,7 +52,10 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "right":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
+				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
+				if !light.IsPoweredOn() {
+					return nil
+				}
 				currentBrightness := int(light.Brightness())
 				desiredBrightness := ((currentBrightness / 10) + 1) * 10
 				if desiredBrightness > 100 {
@@ -60,7 +66,7 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case " ":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevices()[m.cursor-1]
+				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
 				light.ChangePowerState(!light.IsPoweredOn())
 				return light.IsPoweredOn()
 			}
