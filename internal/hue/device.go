@@ -88,3 +88,65 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 	// assuming no error occurred, tthe brightness has successfully been changed
 	d.brightness = desiredBrightness
 }
+
+func (c *HueConnection) FetchDevices() {
+	body := c.MakeRequest(GetRequest, "/clip/v2/resource/light", nil)
+
+	var resp map[string]interface{}
+	err := json.Unmarshal(body, &resp)
+	if err != nil {
+		panic("Failed to unmarshal response. Panicing.")
+	}
+
+	var devices []*Device
+	resources := resp["data"].([]interface{})
+	for _, resc := range resources {
+		resMap := resc.(map[string]interface{})
+		device := MakeNewDevice(
+			c,
+			resMap["id"].(string),
+			resMap["on"].(map[string]interface{})["on"].(bool),
+			resMap["dimming"].(map[string]interface{})["brightness"].(float64),
+			resMap["metadata"].(map[string]interface{})["name"].(string),
+		)
+		devices = append(devices, device)
+	}
+
+	c.devices = &devices
+}
+
+func (c HueConnection) GetDevices() []*Device {
+	return *c.devices
+}
+
+func (c HueConnection) GetDevice(index int) *Device {
+	return (*c.devices)[index]
+}
+
+func (c HueConnection) getDevice(id string) *Device {
+	for _, device := range *c.devices {
+		if device.id == id {
+			return device
+		}
+	}
+
+	return nil
+}
+
+func (c HueConnection) HandleDeviceEvent(event Event) {
+	device := c.getDevice(event.ID)
+	if device == nil {
+		// event is for a device we aren't aware of
+		return
+	}
+
+	// update device power state from event
+	if event.On != nil {
+		device.on = event.On.On
+	}
+
+	// update device brightness from event
+	if event.Dimming != nil {
+		device.brightness = event.Dimming.Brightness
+	}
+}

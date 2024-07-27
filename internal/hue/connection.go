@@ -32,6 +32,8 @@ type HueConnection struct {
 	httpClient    *http.Client
 	httpTransport *http.Transport
 	tlsConfig     *tls.Config
+	eventsChannel chan EventContainer
+	devices       *[]*Device
 	ipAddr        string
 	apiKey        string
 }
@@ -44,11 +46,17 @@ func NewHueConnection() *HueConnection {
 	httpClient := &http.Client{
 		Transport: httpTransport,
 	}
+	devices := make([]*Device, 0)
+
+	// make a buffered event listener channel to accept multiple before block
+	eventsChannel := make(chan EventContainer, 25)
 
 	conn := &HueConnection{
 		httpClient:    httpClient,
 		httpTransport: httpTransport,
 		tlsConfig:     tlsConfig,
+		eventsChannel: eventsChannel,
+		devices:       &devices,
 	}
 
 	return conn
@@ -70,7 +78,7 @@ func (c *HueConnection) SetApiKey(apiKey string) {
 	c.apiKey = apiKey
 }
 
-func (c HueConnection) MakeRequest(reqType RequestType, path string, payload []byte) []byte {
+func (c HueConnection) buildRequest(reqType RequestType, path string, payload []byte, headers map[string]string) *http.Request {
 	// create url from provided path
 	url := fmt.Sprintf("https://%s%s", c.ipAddr, path)
 
@@ -87,9 +95,19 @@ func (c HueConnection) MakeRequest(reqType RequestType, path string, payload []b
 		panic(err.Error())
 	}
 	request.Header.Add("hue-application-key", c.apiKey)
-	if payload != nil {
-		request.Header.Add("Content-Type", "application/json")
+	for key, val := range headers {
+		request.Header.Add(key, val)
 	}
+
+	return request
+}
+
+func (c HueConnection) MakeRequest(reqType RequestType, path string, payload []byte) []byte {
+	// build request
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	var request = c.buildRequest(reqType, path, payload, headers)
 
 	// make the request
 	resp, err := c.httpClient.Do(request)

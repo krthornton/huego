@@ -2,6 +2,7 @@ package menu
 
 import (
 	"fmt"
+	"time"
 
 	"huego/internal/config"
 
@@ -13,13 +14,35 @@ type devicesModel struct {
 	state  *config.ProgramState
 }
 
-func (m devicesModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		// attempt to fetch device data
-		m.state.DeviceDb.FetchDevices()
+type TickMsg time.Time
 
-		return "Devices fetched."
-	}
+func (m devicesModel) fetchDevices() tea.Msg {
+	m.state.Conn.FetchDevices()
+
+	return nil
+}
+
+func (m devicesModel) startEventListener() tea.Msg {
+	m.state.Conn.StartEventListener()
+
+	return nil
+}
+
+func (m devicesModel) nextDeviceUpdateTick() tea.Cmd {
+	// starting checking every second for events to process
+	return tea.Every(time.Duration(250*time.Millisecond), func(t time.Time) tea.Msg {
+		m.state.Conn.ProcessEvents()
+
+		return TickMsg(t)
+	})
+}
+
+func (m devicesModel) Init() tea.Cmd {
+	return tea.Batch(
+		m.fetchDevices,
+		m.startEventListener,
+		m.nextDeviceUpdateTick(),
+	)
 }
 
 func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -33,12 +56,12 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down":
-			if m.cursor < len(m.state.DeviceDb.GetDevices()) {
+			if m.cursor < len(m.state.Conn.GetDevices()) {
 				m.cursor++
 			}
 		case "left":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
+				light := m.state.Conn.GetDevice(m.cursor - 1)
 				if !light.IsPoweredOn() {
 					return nil
 				}
@@ -52,7 +75,7 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "right":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
+				light := m.state.Conn.GetDevice(m.cursor - 1)
 				if !light.IsPoweredOn() {
 					return nil
 				}
@@ -66,11 +89,14 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case " ":
 			return m, func() tea.Msg {
-				light := m.state.DeviceDb.GetDevice(m.cursor - 1)
+				light := m.state.Conn.GetDevice(m.cursor - 1)
 				light.ChangePowerState(!light.IsPoweredOn())
 				return light.IsPoweredOn()
 			}
 		}
+	case TickMsg:
+		// continue checking every second
+		return m, m.nextDeviceUpdateTick()
 	}
 
 	return m, nil
@@ -80,7 +106,7 @@ func (m devicesModel) View() string {
 	var header string
 	var content string
 
-	devices := m.state.DeviceDb.GetDevices()
+	devices := m.state.Conn.GetDevices()
 	if len(devices) > 0 {
 		header = "Devices discovered:"
 
