@@ -3,17 +3,19 @@ package hue
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"time"
 )
 
 type Device struct {
 	conn       *HueConnection
 	id         string
 	on         bool
-	brightness float64
+	brightness int
 	name       string
 }
 
-func MakeNewDevice(conn *HueConnection, id string, on bool, brightness float64, name string) *Device {
+func MakeNewDevice(conn *HueConnection, id string, on bool, brightness int, name string) *Device {
 	return &Device{conn, id, on, brightness, name}
 }
 
@@ -29,11 +31,17 @@ func (l Device) Name() string {
 	return l.name
 }
 
-func (d Device) Brightness() float64 {
+func (d Device) Brightness() int {
 	return d.brightness
 }
 
 func (l *Device) ChangePowerState(desiredState bool) {
+	if l.conn.requestTimer != nil {
+		return
+	} else {
+		l.conn.StartRequestTimer()
+	}
+
 	payload := struct {
 		On struct {
 			On bool `json:"on"`
@@ -56,12 +64,15 @@ func (l *Device) ChangePowerState(desiredState bool) {
 	if err != nil {
 		panic("Failed to unmarshal response. Panicing.")
 	}
-
-	// assuming no error occurred, the power state has successfully been changed
-	l.on = desiredState
 }
 
 func (d *Device) ChangeBrightness(desiredBrightness float64) {
+	if d.conn.requestTimer != nil {
+		return
+	} else {
+		d.conn.StartRequestTimer()
+	}
+
 	payload := struct {
 		Dimming struct {
 			Brightness float64 `json:"brightness"`
@@ -84,9 +95,6 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 	if err != nil {
 		panic("Failed to unmarshal response. Panicing.")
 	}
-
-	// assuming no error occurred, tthe brightness has successfully been changed
-	d.brightness = desiredBrightness
 }
 
 func (c *HueConnection) FetchDevices() {
@@ -102,11 +110,13 @@ func (c *HueConnection) FetchDevices() {
 	resources := resp["data"].([]interface{})
 	for _, resc := range resources {
 		resMap := resc.(map[string]interface{})
+		brightnessFloat := resMap["dimming"].(map[string]interface{})["brightness"].(float64)
+		brightnessInt := int(math.Round(brightnessFloat))
 		device := MakeNewDevice(
 			c,
 			resMap["id"].(string),
 			resMap["on"].(map[string]interface{})["on"].(bool),
-			resMap["dimming"].(map[string]interface{})["brightness"].(float64),
+			brightnessInt,
 			resMap["metadata"].(map[string]interface{})["name"].(string),
 		)
 		devices = append(devices, device)
@@ -147,6 +157,13 @@ func (c HueConnection) HandleDeviceEvent(event Event) {
 
 	// update device brightness from event
 	if event.Dimming != nil {
-		device.brightness = event.Dimming.Brightness
+		device.brightness = int(math.Round(event.Dimming.Brightness))
 	}
+}
+
+func (c *HueConnection) StartRequestTimer() {
+	c.requestTimer = time.AfterFunc(250*time.Millisecond, func() {
+		// remove timer lock after timer expires
+		c.requestTimer = nil
+	})
 }

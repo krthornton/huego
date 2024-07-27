@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 type RequestType int
@@ -33,6 +34,7 @@ type HueConnection struct {
 	httpTransport *http.Transport
 	tlsConfig     *tls.Config
 	eventsChannel chan EventContainer
+	requestTimer  *time.Timer
 	devices       *[]*Device
 	ipAddr        string
 	apiKey        string
