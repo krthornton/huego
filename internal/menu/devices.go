@@ -30,7 +30,7 @@ func (m devicesModel) startEventListener() tea.Msg {
 
 func (m devicesModel) nextDeviceUpdateTick() tea.Cmd {
 	// starting checking every second for events to process
-	return tea.Every(time.Duration(250*time.Millisecond), func(t time.Time) tea.Msg {
+	return tea.Every(time.Duration(50*time.Millisecond), func(t time.Time) tea.Msg {
 		m.state.Conn.ProcessEvents()
 
 		return TickMsg(t)

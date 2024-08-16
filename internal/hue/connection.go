@@ -10,25 +10,6 @@ import (
 	"time"
 )
 
-type RequestType int
-
-const (
-	GetRequest  RequestType = 0
-	PostRequest RequestType = 1
-	PutRequest  RequestType = 3
-)
-
-func getRequestTypeString(reqType RequestType) string {
-	switch reqType {
-	case PostRequest:
-		return "POST"
-	case PutRequest:
-		return "PUT"
-	default:
-		return "GET"
-	}
-}
-
 type HueConnection struct {
 	httpClient    *http.Client
 	httpTransport *http.Transport
@@ -80,7 +61,7 @@ func (c *HueConnection) SetApiKey(apiKey string) {
 	c.apiKey = apiKey
 }
 
-func (c HueConnection) buildRequest(reqType RequestType, path string, payload []byte, headers map[string]string) *http.Request {
+func (c HueConnection) buildRequest(reqType string, path string, payload []byte, headers map[string]string) *http.Request {
 	// create url from provided path
 	url := fmt.Sprintf("https://%s%s", c.ipAddr, path)
 
@@ -91,8 +72,7 @@ func (c HueConnection) buildRequest(reqType RequestType, path string, payload []
 	}
 
 	// build request
-	reqString := getRequestTypeString(reqType)
-	request, err := http.NewRequest(reqString, url, &buf)
+	request, err := http.NewRequest(reqType, url, &buf)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -104,7 +84,7 @@ func (c HueConnection) buildRequest(reqType RequestType, path string, payload []
 	return request
 }
 
-func (c HueConnection) MakeRequest(reqType RequestType, path string, payload []byte) []byte {
+func (c HueConnection) MakeRequest(reqType string, path string, payload []byte) []byte {
 	// build request
 	headers := map[string]string{
 		"Content-Type": "application/json",

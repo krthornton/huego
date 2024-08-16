@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"regexp"
 	"time"
 )
 
@@ -39,7 +38,7 @@ func (c HueConnection) StartEventListener() {
 	headers := map[string]string{
 		"Accept": "text/event-stream",
 	}
-	var request = c.buildRequest(GetRequest, "/eventstream/clip/v2", nil, headers)
+	var request = c.buildRequest("GET", "/eventstream/clip/v2", nil, headers)
 
 	// make the request
 	resp, err := c.httpClient.Do(request)
@@ -55,27 +54,39 @@ func (c HueConnection) StartEventListener() {
 func (c HueConnection) eventListener(body io.ReadCloser) {
 	// listen and print out responses
 	var reader = bufio.NewReader(body)
-	re := regexp.MustCompile("data: ?(.*)")
 	for {
 		line, err := reader.ReadBytes('\n')
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		str := string(line)
-		if matches := re.FindStringSubmatch(str); len(matches) > 0 {
-			var event EventContainer
-			err = json.Unmarshal([]byte(matches[1]), &event)
-			if err != nil {
-				fmt.Println(err.Error())
-				os.Exit(1)
-			}
-			c.eventsChannel <- event
+
+		if len(line) < 6 {
+			continue
 		}
+		match := true
+		for index, charByte := range []byte("data:") {
+			if line[index] != charByte {
+				match = false
+				break
+			}
+		}
+		if !match {
+			// this line is not a data line
+			continue
+		}
+
+		var event EventContainer
+		err = json.Unmarshal(line[6:], &event)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		c.eventsChannel <- event
 	}
 }
 
-func (c HueConnection) ProcessEvents() {
+func (c *HueConnection) ProcessEvents() {
 outterLoop:
 	for {
 		select {

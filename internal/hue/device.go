@@ -57,7 +57,7 @@ func (l *Device) ChangePowerState(desiredState bool) {
 	}
 
 	url := fmt.Sprintf("/clip/v2/resource/light/%s", l.id)
-	body := l.conn.MakeRequest(PutRequest, url, bytes)
+	body := l.conn.MakeRequest("PUT", url, bytes)
 
 	var resp map[string]interface{}
 	err = json.Unmarshal(body, &resp)
@@ -88,7 +88,7 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 	}
 
 	url := fmt.Sprintf("/clip/v2/resource/light/%s", d.id)
-	body := d.conn.MakeRequest(PutRequest, url, bytes)
+	body := d.conn.MakeRequest("PUT", url, bytes)
 
 	var resp map[string]interface{}
 	err = json.Unmarshal(body, &resp)
@@ -98,7 +98,7 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 }
 
 func (c *HueConnection) FetchDevices() {
-	body := c.MakeRequest(GetRequest, "/clip/v2/resource/light", nil)
+	body := c.MakeRequest("GET", "/clip/v2/resource/light", nil)
 
 	var resp map[string]interface{}
 	err := json.Unmarshal(body, &resp)
@@ -162,7 +162,7 @@ func (c HueConnection) HandleDeviceEvent(event Event) {
 }
 
 func (c *HueConnection) StartRequestTimer() {
-	c.requestTimer = time.AfterFunc(250*time.Millisecond, func() {
+	c.requestTimer = time.AfterFunc(100*time.Millisecond, func() {
 		// remove timer lock after timer expires
 		c.requestTimer = nil
 	})
