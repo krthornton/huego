@@ -9,16 +9,50 @@ import (
 	"time"
 )
 
-type HueRequestType int
+type hueRequest struct {
+	httpRequest     *http.Request
+	responseChannel chan *[]byte
+}
 
-type HueRequest struct {
-	RequestType HueRequestType
-	LimitId     string
-	HttpRequest *http.Request
+func (c HueConnection) SubmitHueRequest(reqType string, path string, payload []byte, headers map[string]string) chan *[]byte {
+	httpRequest := c.buildHttpRequest(reqType, path, payload, headers)
+	respChan := make(chan *[]byte, 1)
+	hueRequest := &hueRequest{
+		httpRequest:     httpRequest,
+		responseChannel: respChan,
+	}
+	c.requestChannel <- hueRequest
+
+	return hueRequest.responseChannel
+}
+
+func (c HueConnection) StartRequestHandler() {
+	go c.requestHandler()
 }
 
 func (c HueConnection) requestHandler() {
+	for {
+		// receive next request from channel
+		request := <-c.requestChannel
 
+		// make the request
+		resp, err := c.httpClient.Do(request.httpRequest)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
+		// capture response and return as bytes
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
+		// return response to requestee
+		request.responseChannel <- &body
+		close(request.responseChannel)
+	}
 }
 
 func (c HueConnection) buildHttpRequest(reqType string, path string, payload []byte, headers map[string]string) *http.Request {
@@ -42,31 +76,6 @@ func (c HueConnection) buildHttpRequest(reqType string, path string, payload []b
 	}
 
 	return request
-}
-
-func (c HueConnection) MakeRequest(reqType string, path string, payload []byte) []byte {
-	// build request
-	headers := map[string]string{
-		"Content-Type": "application/json",
-	}
-	var request = c.buildHttpRequest(reqType, path, payload, headers)
-
-	// make the request
-	resp, err := c.httpClient.Do(request)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	// capture response and return as bytes
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	return body
 }
 
 func (c *HueConnection) StartRequestTimer() {

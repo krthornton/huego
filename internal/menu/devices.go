@@ -17,6 +17,7 @@ type devicesModel struct {
 type TickMsg time.Time
 
 func (m devicesModel) initConnection() tea.Msg {
+	m.state.Conn.StartRequestHandler()
 	m.state.Conn.FetchDevices()
 	m.state.Conn.StartEventListener()
 

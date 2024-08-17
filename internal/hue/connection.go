@@ -7,14 +7,14 @@ import (
 )
 
 type HueConnection struct {
-	httpClient    *http.Client
-	httpTransport *http.Transport
-	tlsConfig     *tls.Config
-	eventsChannel chan EventContainer
-	requestTimer  *time.Timer
-	devices       *[]*Device
-	ipAddr        string
-	apiKey        string
+	httpClient     *http.Client
+	httpTransport  *http.Transport
+	tlsConfig      *tls.Config
+	requestChannel chan *hueRequest
+	requestTimer   *time.Timer
+	devices        *[]*Device
+	ipAddr         string
+	apiKey         string
 }
 
 func NewHueConnection() *HueConnection {
@@ -27,15 +27,14 @@ func NewHueConnection() *HueConnection {
 	}
 	devices := make([]*Device, 0)
 
-	// make a buffered event listener channel to accept multiple before block
-	eventsChannel := make(chan EventContainer, 25)
+	requestChannel := make(chan *hueRequest, 10)
 
 	conn := &HueConnection{
-		httpClient:    httpClient,
-		httpTransport: httpTransport,
-		tlsConfig:     tlsConfig,
-		eventsChannel: eventsChannel,
-		devices:       &devices,
+		httpClient:     httpClient,
+		httpTransport:  httpTransport,
+		requestChannel: requestChannel,
+		tlsConfig:      tlsConfig,
+		devices:        &devices,
 	}
 
 	return conn

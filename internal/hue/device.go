@@ -34,11 +34,11 @@ func (d Device) Brightness() int {
 	return d.brightness
 }
 
-func (l *Device) ChangePowerState(desiredState bool) {
-	if l.conn.requestTimer != nil {
+func (d *Device) ChangePowerState(desiredState bool) {
+	if d.conn.requestTimer != nil {
 		return
 	} else {
-		l.conn.StartRequestTimer()
+		d.conn.StartRequestTimer()
 	}
 
 	payload := struct {
@@ -55,14 +55,9 @@ func (l *Device) ChangePowerState(desiredState bool) {
 		panic(err.Error())
 	}
 
-	url := fmt.Sprintf("/clip/v2/resource/light/%s", l.id)
-	body := l.conn.MakeRequest("PUT", url, bytes)
+	url := fmt.Sprintf("/clip/v2/resource/light/%s", d.id)
 
-	var resp map[string]interface{}
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		panic("Failed to unmarshal response. Panicing.")
-	}
+	d.conn.SubmitHueRequest("PUT", url, bytes, nil)
 }
 
 func (d *Device) ChangeBrightness(desiredBrightness float64) {
@@ -87,17 +82,13 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 	}
 
 	url := fmt.Sprintf("/clip/v2/resource/light/%s", d.id)
-	body := d.conn.MakeRequest("PUT", url, bytes)
 
-	var resp map[string]interface{}
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		panic("Failed to unmarshal response. Panicing.")
-	}
+	d.conn.SubmitHueRequest("PUT", url, bytes, nil)
 }
 
 func (c *HueConnection) FetchDevices() {
-	body := c.MakeRequest("GET", "/clip/v2/resource/light", nil)
+	respChan := c.SubmitHueRequest("GET", "/clip/v2/resource/light", nil, nil)
+	body := *<-respChan
 
 	var resp map[string]interface{}
 	err := json.Unmarshal(body, &resp)
