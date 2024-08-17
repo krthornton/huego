@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"time"
 )
@@ -38,7 +39,7 @@ func (c HueConnection) StartEventListener() {
 	headers := map[string]string{
 		"Accept": "text/event-stream",
 	}
-	var request = c.buildRequest("GET", "/eventstream/clip/v2", nil, headers)
+	var request = c.buildHttpRequest("GET", "/eventstream/clip/v2", nil, headers)
 
 	// make the request
 	resp, err := c.httpClient.Do(request)
@@ -76,36 +77,41 @@ func (c HueConnection) eventListener(body io.ReadCloser) {
 			continue
 		}
 
-		var event EventContainer
-		err = json.Unmarshal(line[6:], &event)
+		var eventContainer EventContainer
+		err = json.Unmarshal(line[6:], &eventContainer)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
 		}
-		c.eventsChannel <- event
-	}
-}
 
-func (c *HueConnection) ProcessEvents() {
-outterLoop:
-	for {
-		select {
-		case eventContainer := <-c.eventsChannel:
-			// at least one event container is waiting to be processed
-			for _, container := range eventContainer {
-				// process each container
-				if container.Type == "update" {
-					for _, event := range container.Data {
-						// process each event
-						if event.Type == "light" {
-							c.HandleDeviceEvent(event)
-						}
+		for _, container := range eventContainer {
+			// process each container
+			if container.Type == "update" {
+				for _, event := range container.Data {
+					// process each event
+					if event.Type == "light" {
+						c.handleDeviceEvent(event)
 					}
 				}
 			}
-		default:
-			// no events are waiting to be processed; break and continue
-			break outterLoop
 		}
+	}
+}
+
+func (c HueConnection) handleDeviceEvent(event Event) {
+	device := c.getDevice(event.ID)
+	if device == nil {
+		// event is for a device we aren't aware of
+		return
+	}
+
+	// update device power state from event
+	if event.On != nil {
+		device.on = event.On.On
+	}
+
+	// update device brightness from event
+	if event.Dimming != nil {
+		device.brightness = int(math.Round(event.Dimming.Brightness))
 	}
 }

@@ -16,13 +16,8 @@ type devicesModel struct {
 
 type TickMsg time.Time
 
-func (m devicesModel) fetchDevices() tea.Msg {
+func (m devicesModel) initConnection() tea.Msg {
 	m.state.Conn.FetchDevices()
-
-	return nil
-}
-
-func (m devicesModel) startEventListener() tea.Msg {
 	m.state.Conn.StartEventListener()
 
 	return nil
@@ -31,16 +26,13 @@ func (m devicesModel) startEventListener() tea.Msg {
 func (m devicesModel) nextDeviceUpdateTick() tea.Cmd {
 	// starting checking every second for events to process
 	return tea.Every(time.Duration(50*time.Millisecond), func(t time.Time) tea.Msg {
-		m.state.Conn.ProcessEvents()
-
 		return TickMsg(t)
 	})
 }
 
 func (m devicesModel) Init() tea.Cmd {
 	return tea.Batch(
-		m.fetchDevices,
-		m.startEventListener,
+		m.initConnection,
 		m.nextDeviceUpdateTick(),
 	)
 }

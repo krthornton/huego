@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"time"
 )
 
 type Device struct {
@@ -141,29 +140,4 @@ func (c HueConnection) getDevice(id string) *Device {
 	}
 
 	return nil
-}
-
-func (c HueConnection) HandleDeviceEvent(event Event) {
-	device := c.getDevice(event.ID)
-	if device == nil {
-		// event is for a device we aren't aware of
-		return
-	}
-
-	// update device power state from event
-	if event.On != nil {
-		device.on = event.On.On
-	}
-
-	// update device brightness from event
-	if event.Dimming != nil {
-		device.brightness = int(math.Round(event.Dimming.Brightness))
-	}
-}
-
-func (c *HueConnection) StartRequestTimer() {
-	c.requestTimer = time.AfterFunc(100*time.Millisecond, func() {
-		// remove timer lock after timer expires
-		c.requestTimer = nil
-	})
 }
