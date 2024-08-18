@@ -57,7 +57,9 @@ func (c *HueConnection) Authenticate() tea.Msg {
 		panic(err.Error())
 	}
 
-	respChan := c.SubmitHueRequest("POST", "/api", bytes, nil)
+	url := "/api"
+
+	respChan := c.SubmitHueRequest(url, "POST", url, bytes, nil)
 	resp := *<-respChan
 	if c.checkAuthResponse(resp) {
 		return "Success"
@@ -70,7 +72,7 @@ func (c *HueConnection) Authenticate() tea.Msg {
 	sleepTime, _ := time.ParseDuration("2s")
 	for now.Before(end) {
 		time.Sleep(sleepTime)
-		respChan = c.SubmitHueRequest("POST", "/api", bytes, nil)
+		respChan = c.SubmitHueRequest(url, "POST", url, bytes, nil)
 		resp = *<-respChan
 		if c.checkAuthResponse(resp) {
 			return "Success"

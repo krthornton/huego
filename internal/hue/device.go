@@ -35,12 +35,6 @@ func (d Device) Brightness() int {
 }
 
 func (d *Device) ChangePowerState(desiredState bool) {
-	if d.conn.requestTimer != nil {
-		return
-	} else {
-		d.conn.StartRequestTimer()
-	}
-
 	payload := struct {
 		On struct {
 			On bool `json:"on"`
@@ -56,17 +50,12 @@ func (d *Device) ChangePowerState(desiredState bool) {
 	}
 
 	url := fmt.Sprintf("/clip/v2/resource/light/%s", d.id)
+	reqType := fmt.Sprintf("%s%s", url, "power")
 
-	d.conn.SubmitHueRequest("PUT", url, bytes, nil)
+	d.conn.SubmitHueRequest(reqType, "PUT", url, bytes, nil)
 }
 
 func (d *Device) ChangeBrightness(desiredBrightness float64) {
-	if d.conn.requestTimer != nil {
-		return
-	} else {
-		d.conn.StartRequestTimer()
-	}
-
 	payload := struct {
 		Dimming struct {
 			Brightness float64 `json:"brightness"`
@@ -82,12 +71,15 @@ func (d *Device) ChangeBrightness(desiredBrightness float64) {
 	}
 
 	url := fmt.Sprintf("/clip/v2/resource/light/%s", d.id)
+	reqType := fmt.Sprintf("%s%s", url, "brightness")
 
-	d.conn.SubmitHueRequest("PUT", url, bytes, nil)
+	d.conn.SubmitHueRequest(reqType, "PUT", url, bytes, nil)
 }
 
 func (c *HueConnection) FetchDevices() {
-	respChan := c.SubmitHueRequest("GET", "/clip/v2/resource/light", nil, nil)
+	url := "/clip/v2/resource/light"
+	reqType := fmt.Sprintf("%s%s", url, "fetch")
+	respChan := c.SubmitHueRequest(reqType, "GET", url, nil, nil)
 	body := *<-respChan
 
 	var resp map[string]interface{}
