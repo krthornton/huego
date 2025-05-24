@@ -35,6 +35,7 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case string:
 		if msg == "Success" {
 			return m, func() tea.Msg {
+				m.state.Config.SetApiKeyForIpAddr(m.state.Conn.GetIpAddress(), m.state.Conn.GetApiKey())
 				return InitDevicesModel(m.state)
 			}
 		}

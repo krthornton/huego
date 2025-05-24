@@ -87,3 +87,13 @@ func (c Configuration) SaveConfiguration() {
 		panic("Failed to write configuration file")
 	}
 }
+
+func (c *Configuration) SetApiKeyForIpAddr(ipAddr string, apiKey string) {
+	for i := 0; i < len(c.Hubs); i++ {
+		hub := &c.Hubs[i]
+		if hub.IpAddress == ipAddr {
+			hub.ApiKey = apiKey
+			return
+		}
+	}
+}
