@@ -25,12 +25,14 @@ func InitDiscoveryModel(state *config.ProgramState) discoveryModel {
 }
 
 func (m discoveryModel) initDiscovery() tea.Msg {
-	ipAddr := hue.DiscoverIpAddress()
-	m.state.Conn.SetIpAddress(ipAddr)
+	// simply use first discovered bridge
+	// TODO: implement ability to select amongst available bridges
+	ipAddr := <-hue.DiscoverHueBridges()
+	m.state.Conn.SetIpAddress(ipAddr.String())
 
 	var apiKey string
 	for _, savedHub := range m.state.Config.Hubs {
-		if savedHub.IpAddress == ipAddr {
+		if savedHub.IpAddress == ipAddr.String() {
 			apiKey = savedHub.ApiKey
 			break
 		}
