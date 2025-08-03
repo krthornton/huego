@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/mdns"
 )
 
-func DiscoverHueBridges() chan *net.IP {
+func DiscoverHueBridges(ipCh chan *net.IP) {
 	// discover available interfaces
 	infs, err := net.Interfaces()
 	if err != nil {
@@ -16,7 +16,6 @@ func DiscoverHueBridges() chan *net.IP {
 	}
 
 	// start query routines for each interface
-	ipCh := make(chan *net.IP, 10)
 	for _, inf := range infs {
 		// ensure inf object outlives loop
 		inf := inf
@@ -43,6 +42,4 @@ func DiscoverHueBridges() chan *net.IP {
 			mdns.Query(params)
 		}()
 	}
-
-	return ipCh
 }
