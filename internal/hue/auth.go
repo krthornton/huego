@@ -3,9 +3,6 @@ package hue
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type authRequest struct {
@@ -29,9 +26,17 @@ type authResponse []struct {
 	Success authSuccess `json:"success"`
 }
 
-func (c *HueConnection) checkAuthResponse(body []byte) bool {
+func (c *HueConnection) Authenticate() bool {
+	id := fmt.Sprintf("huego#%s", "REPLACE_ME")
+	payload := authRequest{id, true}
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	respBytes := c.MakeRequest(PostRequest, "/api", bytes)
 	var resp authResponse
-	err := json.Unmarshal(body, &resp)
+	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {
 		panic("failed to unmarshal auth check response")
 	}
@@ -47,34 +52,4 @@ func (c *HueConnection) checkAuthResponse(body []byte) bool {
 	}
 
 	return false
-}
-
-func (c *HueConnection) Authenticate() tea.Msg {
-	id := fmt.Sprintf("huego#%s", "REPLACE_ME")
-	payload := authRequest{id, true}
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	resp := c.MakeRequest(PostRequest, "/api", bytes)
-	if c.checkAuthResponse(resp) {
-		return "Success"
-	}
-
-	now := time.Now()
-	timeout, _ := time.ParseDuration("1m")
-	end := now.Add(timeout)
-
-	sleepTime, _ := time.ParseDuration("2s")
-	for now.Before(end) {
-		time.Sleep(sleepTime)
-		resp = c.MakeRequest(PostRequest, "/api", bytes)
-		if c.checkAuthResponse(resp) {
-			return "Success"
-		}
-		now = time.Now()
-	}
-
-	panic("failed to authenticate")
 }

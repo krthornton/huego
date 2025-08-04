@@ -40,10 +40,13 @@ func main() {
 		}
 	}
 	if !defined {
-		conf.Hubs = append(conf.Hubs, config.Hub{
-			IpAddress: state.Conn.GetIpAddress(),
-			ApiKey:    state.Conn.GetApiKey(),
-		})
+		apiKey := state.Conn.GetApiKey()
+		if apiKey != "" {
+			conf.Hubs = append(conf.Hubs, config.Hub{
+				IpAddress: state.Conn.GetIpAddress(),
+				ApiKey:    state.Conn.GetApiKey(),
+			})
+		}
 	}
 
 	// main loop has exited, let's save config back to disk

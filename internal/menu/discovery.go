@@ -41,7 +41,7 @@ type discoveryPollMsg struct {
 	t time.Time
 }
 
-func (m discoveryModel) discoveryPollTick() tea.Cmd {
+func discoveryPollTick() tea.Cmd {
 	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
 		return discoveryPollMsg{
 			t: t,
@@ -53,7 +53,7 @@ type discoveryDoneMsg struct {
 	t time.Time
 }
 
-func (m discoveryModel) discoveryDoneTick() tea.Cmd {
+func discoveryDoneTick() tea.Cmd {
 	return tea.Tick(1*time.Second, func(t time.Time) tea.Msg {
 		return discoveryDoneMsg{
 			t: t,
@@ -64,8 +64,8 @@ func (m discoveryModel) discoveryDoneTick() tea.Cmd {
 func (m discoveryModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		m.discoveryPollTick(),
-		m.discoveryDoneTick(),
+		discoveryPollTick(),
+		discoveryDoneTick(),
 	)
 }
 
@@ -83,18 +83,22 @@ func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.hubs = make([]*net.IP, 0)
 				m.cursor = 1
 				hue.DiscoverHueBridges(m.ipCh)
-				cmd = m.discoveryDoneTick()
+				cmd = discoveryDoneTick()
 			}
 		case "enter":
 			if !m.discovering {
-				m, cmd = m.selectHub(m.hubs[m.cursor-1].String())
+				ip := m.hubs[m.cursor-1].String()
+				m.state.Conn.SetIpAddress(ip)
+				return m, func() tea.Msg {
+					return InitAuthenticationModel(m.state)
+				}
 			}
 		case "up":
 			if !m.discovering && m.cursor > 1 {
 				m.cursor--
 			}
 		case "down":
-			if !m.discovering && m.cursor < len(m.hubs)-1 {
+			if !m.discovering && m.cursor < len(m.hubs) {
 				m.cursor++
 			}
 		}
@@ -105,7 +109,7 @@ func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.hubs = append(m.hubs, ip)
 		default:
 		}
-		cmd = m.discoveryPollTick()
+		cmd = discoveryPollTick()
 	case discoveryDoneMsg:
 		m.discovering = false
 	case spinner.TickMsg:
@@ -137,30 +141,4 @@ func (m discoveryModel) View() string {
 		}
 	}
 	return content
-}
-
-func (m discoveryModel) selectHub(ipAddr string) (discoveryModel, tea.Cmd) {
-	m.state.Conn.SetIpAddress(ipAddr)
-
-	var apiKey string
-	for _, savedHub := range m.state.Config.Hubs {
-		if savedHub.IpAddress == ipAddr {
-			apiKey = savedHub.ApiKey
-			break
-		}
-	}
-
-	if apiKey == "" {
-		// we have not authenticated with this hub yet
-		return m, func() tea.Msg {
-			return InitAuthenticationModel(m.state)
-		}
-	}
-
-	// we've already authenticated with the discovered hub
-	m.state.Conn.SetApiKey(apiKey)
-
-	return m, func() tea.Msg {
-		return InitDevicesModel(m.state)
-	}
 }
