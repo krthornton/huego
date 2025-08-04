@@ -1,8 +1,10 @@
 package menu
 
 import (
+	"errors"
 	"fmt"
 	"huego/internal/config"
+	"huego/internal/hue"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -10,27 +12,19 @@ import (
 )
 
 type authModel struct {
-	state         *config.ProgramState
-	spinner       spinner.Model
-	authenticated bool
+	state          *config.ProgramState
+	spinner        spinner.Model
+	buttonRequired bool
 }
 
 func InitAuthenticationModel(state *config.ProgramState) authModel {
 	spin := spinner.New()
 	spin.Spinner = spinner.Dot
 
-	authState := false
-	for _, savedHub := range state.Config.Hubs {
-		if savedHub.IpAddress == state.Conn.GetIpAddress() {
-			state.Conn.SetApiKey(savedHub.ApiKey)
-			authState = true
-		}
-	}
-
 	return authModel{
-		state:         state,
-		spinner:       spin,
-		authenticated: authState,
+		state:          state,
+		spinner:        spin,
+		buttonRequired: false,
 	}
 }
 
@@ -39,18 +33,19 @@ type authTickMsg struct {
 }
 
 func (m authModel) authTick() tea.Cmd {
-	if m.authenticated {
-		return func() tea.Msg {
-			return authTickMsg{
-				success: true,
+	return tea.Tick(1*time.Second, func(t time.Time) tea.Msg {
+		err := m.state.Conn.Authenticate(m.state.Config)
+
+		if err != nil {
+			var unauthErr hue.UnauthenticatedError
+			if errors.As(err, &unauthErr) {
+				return authTickMsg{success: false}
+			} else {
+				panic(err)
 			}
 		}
-	}
 
-	return tea.Tick(1*time.Second, func(t time.Time) tea.Msg {
-		return authTickMsg{
-			success: m.state.Conn.Authenticate(),
-		}
+		return authTickMsg{success: true}
 	})
 }
 
@@ -68,10 +63,10 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case authTickMsg:
 		if msg.success {
 			return m, func() tea.Msg {
-				m.state.Config.SetApiKeyForIpAddr(m.state.Conn.GetIpAddress(), m.state.Conn.GetApiKey())
 				return InitDevicesModel(m.state)
 			}
 		} else {
+			m.buttonRequired = true
 			cmd = m.authTick()
 		}
 	case spinner.TickMsg:
@@ -82,9 +77,12 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m authModel) View() string {
-	var content string = ""
-	if !m.authenticated {
-		content = fmt.Sprintf("%s Please press the button on your Hue bridge to authenticate...", m.spinner.View())
+	var content string
+	if m.buttonRequired {
+		content = fmt.Sprintf("%s Please press the button on your Hue bridge to authenticate...\n", m.spinner.View())
+	} else {
+		content = fmt.Sprintf("%s Authenticating...\n", m.spinner.View())
 	}
+	content = fmt.Sprintf("%s\n press 'q' to quit", content)
 	return content
 }

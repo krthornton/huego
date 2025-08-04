@@ -105,6 +105,7 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m devicesModel) View() string {
 	var header string
 	var content string
+	var footer string
 
 	devices := m.state.Conn.GetDevices()
 	if len(devices) > 0 {
@@ -127,10 +128,11 @@ func (m devicesModel) View() string {
 			content = fmt.Sprintf("%s\n", content)
 			item++
 		}
+		footer = "↑↓ to change selection || space to toggle power || ←→ to change brightness || 'q' to quit"
 	} else {
 		header = "Fetching devices from hue bridge..."
+		footer = "press 'q' to quit"
 	}
-	footer := "↑↓ to change selection || space to toggle power || ←→ to change brightness || 'q' to quit"
 
 	return fmt.Sprintf("%s\n%s\n%s", header, content, footer)
 }

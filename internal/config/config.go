@@ -88,12 +88,30 @@ func (c Configuration) SaveConfiguration() {
 	}
 }
 
-func (c *Configuration) SetApiKeyForIpAddr(ipAddr string, apiKey string) {
+func (c *Configuration) SetApiKey(ip string, apiKey string) error {
+	// check for and update existing API key entry
 	for i := 0; i < len(c.Hubs); i++ {
 		hub := &c.Hubs[i]
-		if hub.IpAddress == ipAddr {
+		if hub.IpAddress == ip {
 			hub.ApiKey = apiKey
-			return
+			return nil
 		}
 	}
+
+	// otherwise add new one
+	c.Hubs = append(c.Hubs, Hub{
+		IpAddress: ip,
+		ApiKey:    apiKey,
+	})
+	return nil
+}
+
+func (c Configuration) GetApiKey(ip string) (string, error) {
+	for _, savedHub := range c.Hubs {
+		if savedHub.IpAddress == ip {
+			return savedHub.ApiKey, nil
+		}
+	}
+
+	return "", nil
 }

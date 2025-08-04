@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+type SecretManager interface {
+	GetApiKey(ip string) (string, error)
+	SetApiKey(ip string, apiKey string) error
+}
+
 type authRequest struct {
 	DeviceType string `json:"devicetype"`
 	Generate   bool   `json:"generateclientkey"`
@@ -26,30 +31,66 @@ type authResponse []struct {
 	Success authSuccess `json:"success"`
 }
 
-func (c *HueConnection) Authenticate() bool {
+type UnauthenticatedError struct {
+	ip string
+}
+
+func (e UnauthenticatedError) Error() string {
+	return fmt.Sprintf("button press required for hub with IP %s", e.ip)
+}
+
+type AuthenticationFailureError struct {
+	msg string
+}
+
+func (e AuthenticationFailureError) Error() string {
+	return e.msg
+}
+
+func (c *HueConnection) Authenticate(secMan SecretManager) error {
+	// determine if we already have an API key for the given IP
+	apiKey, err := secMan.GetApiKey(c.ipAddr)
+	if err != nil {
+		return AuthenticationFailureError{msg: err.Error()}
+	}
+
+	if apiKey != "" {
+		// API key already exists; assume authentication successful
+		c.apiKey = apiKey
+		return nil
+	}
+
+	// otherwise, attempt to obtain new API key from Hue hub
 	id := fmt.Sprintf("huego#%s", "REPLACE_ME")
 	payload := authRequest{id, true}
 	bytes, err := json.Marshal(payload)
 	if err != nil {
-		panic(err.Error())
+		return AuthenticationFailureError{msg: err.Error()}
 	}
 
 	respBytes := c.MakeRequest(PostRequest, "/api", bytes)
 	var resp authResponse
 	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {
-		panic("failed to unmarshal auth check response")
+		return AuthenticationFailureError{msg: "failed to unmarshal auth check response"}
 	}
 
 	if len(resp) != 1 {
-		panic("unexpected response length in auth")
+		return AuthenticationFailureError{msg: "unexpected response length in auth"}
 	}
 	authContent := resp[0]
 
-	if authContent.Success.Username != "" {
-		c.apiKey = authContent.Success.Username
-		return true
+	apiKey = authContent.Success.Username
+	if apiKey == "" {
+		return UnauthenticatedError{ip: c.ipAddr}
 	}
 
-	return false
+	// authentication successful; save API key
+	err = secMan.SetApiKey(c.ipAddr, apiKey)
+	if err != nil {
+		return AuthenticationFailureError{msg: err.Error()}
+	}
+
+	c.apiKey = apiKey
+	return nil
 }

@@ -122,7 +122,7 @@ func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m discoveryModel) View() string {
 	var content string
 	if m.discovering {
-		content = fmt.Sprintf("%s Discovering local Hue bridges\n", m.spinner.View())
+		content = fmt.Sprintf("%s Discovering local Hue bridges\n\n press 'q' to quit", m.spinner.View())
 	} else {
 		if len(m.hubs) == 0 {
 			content = "No local Hue hubs found. Press 'r' to refresh."
