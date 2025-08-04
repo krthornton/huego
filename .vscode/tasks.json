@@ -8,6 +8,31 @@
             "type": "shell",
             "command": "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 .",
             "isBackground": true
+        },
+        {
+            "type": "go",
+            "label": "Build clhue cmd",
+            "command": "build",
+            "args": [
+                "-o", "${workspaceFolder}\\",
+                "${workspaceFolder}\\cmd\\clhue"
+            ],
+            "problemMatcher": [
+                "$go"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "cd c:\\Users\\kaleb\\Projects\\huego; go build ${fileDirname}"
         }
     ]
 }

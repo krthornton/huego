@@ -1,10 +1,9 @@
-package menu
+package main
 
 import (
 	"errors"
 	"fmt"
-	"huego/internal/config"
-	"huego/internal/hue"
+	"huego"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -12,12 +11,12 @@ import (
 )
 
 type authModel struct {
-	state          *config.ProgramState
+	state          *programState
 	spinner        spinner.Model
 	buttonRequired bool
 }
 
-func InitAuthenticationModel(state *config.ProgramState) authModel {
+func initAuthenticationModel(state *programState) authModel {
 	spin := spinner.New()
 	spin.Spinner = spinner.Dot
 
@@ -34,10 +33,10 @@ type authTickMsg struct {
 
 func (m authModel) authTick() tea.Cmd {
 	return tea.Tick(1*time.Second, func(t time.Time) tea.Msg {
-		err := m.state.Conn.Authenticate(m.state.Config)
+		err := m.state.conn.Authenticate(m.state.config)
 
 		if err != nil {
-			var unauthErr hue.UnauthenticatedError
+			var unauthErr huego.UnauthenticatedError
 			if errors.As(err, &unauthErr) {
 				return authTickMsg{success: false}
 			} else {
@@ -63,7 +62,7 @@ func (m authModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case authTickMsg:
 		if msg.success {
 			return m, func() tea.Msg {
-				return InitDevicesModel(m.state)
+				return initDevicesModel(m.state)
 			}
 		} else {
 			m.buttonRequired = true

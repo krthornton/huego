@@ -1,9 +1,8 @@
-package menu
+package main
 
 import (
 	"fmt"
-	"huego/internal/config"
-	"huego/internal/hue"
+	"huego"
 	"net"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type discoveryModel struct {
-	state       *config.ProgramState
+	state       *programState
 	spinner     spinner.Model
 	hubs        []*net.IP
 	cursor      int
@@ -20,12 +19,12 @@ type discoveryModel struct {
 	discovering bool
 }
 
-func InitDiscoveryModel(state *config.ProgramState) discoveryModel {
+func initDiscoveryModel(state *programState) discoveryModel {
 	spin := spinner.New()
 	spin.Spinner = spinner.Dot
 
 	ipCh := make(chan *net.IP, 10)
-	hue.DiscoverHueBridges(ipCh)
+	huego.DiscoverHueBridges(ipCh)
 
 	return discoveryModel{
 		state:       state,
@@ -82,15 +81,15 @@ func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.discovering = true
 				m.hubs = make([]*net.IP, 0)
 				m.cursor = 1
-				hue.DiscoverHueBridges(m.ipCh)
+				huego.DiscoverHueBridges(m.ipCh)
 				cmd = discoveryDoneTick()
 			}
 		case "enter":
 			if !m.discovering {
 				ip := m.hubs[m.cursor-1].String()
-				m.state.Conn.SetIpAddress(ip)
+				m.state.conn.SetIpAddress(ip)
 				return m, func() tea.Msg {
-					return InitAuthenticationModel(m.state)
+					return initAuthenticationModel(m.state)
 				}
 			}
 		case "up":

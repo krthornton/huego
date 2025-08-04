@@ -1,4 +1,4 @@
-package hue
+package huego
 
 import (
 	"encoding/json"

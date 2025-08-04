@@ -1,29 +1,27 @@
-package menu
+package main
 
 import (
 	"fmt"
 	"time"
-
-	"huego/internal/config"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type devicesModel struct {
 	cursor int
-	state  *config.ProgramState
+	state  *programState
 }
 
 type TickMsg time.Time
 
 func (m devicesModel) fetchDevices() tea.Msg {
-	m.state.Conn.FetchDevices()
+	m.state.conn.FetchDevices()
 
 	return nil
 }
 
 func (m devicesModel) startEventListener() tea.Msg {
-	m.state.Conn.StartEventListener()
+	m.state.conn.StartEventListener()
 
 	return nil
 }
@@ -31,7 +29,7 @@ func (m devicesModel) startEventListener() tea.Msg {
 func (m devicesModel) nextDeviceUpdateTick() tea.Cmd {
 	// starting checking every second for events to process
 	return tea.Every(time.Duration(250*time.Millisecond), func(t time.Time) tea.Msg {
-		m.state.Conn.ProcessEvents()
+		m.state.conn.ProcessEvents()
 
 		return TickMsg(t)
 	})
@@ -56,12 +54,12 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down":
-			if m.cursor < len(m.state.Conn.GetDevices()) {
+			if m.cursor < len(m.state.conn.GetDevices()) {
 				m.cursor++
 			}
 		case "left":
 			return m, func() tea.Msg {
-				light := m.state.Conn.GetDevice(m.cursor - 1)
+				light := m.state.conn.GetDevice(m.cursor - 1)
 				if !light.IsPoweredOn() {
 					return nil
 				}
@@ -75,7 +73,7 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "right":
 			return m, func() tea.Msg {
-				light := m.state.Conn.GetDevice(m.cursor - 1)
+				light := m.state.conn.GetDevice(m.cursor - 1)
 				if !light.IsPoweredOn() {
 					return nil
 				}
@@ -89,7 +87,7 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case " ":
 			return m, func() tea.Msg {
-				light := m.state.Conn.GetDevice(m.cursor - 1)
+				light := m.state.conn.GetDevice(m.cursor - 1)
 				light.ChangePowerState(!light.IsPoweredOn())
 				return light.IsPoweredOn()
 			}
@@ -107,7 +105,7 @@ func (m devicesModel) View() string {
 	var content string
 	var footer string
 
-	devices := m.state.Conn.GetDevices()
+	devices := m.state.conn.GetDevices()
 	if len(devices) > 0 {
 		header = "Devices discovered:"
 
@@ -137,7 +135,7 @@ func (m devicesModel) View() string {
 	return fmt.Sprintf("%s\n%s\n%s", header, content, footer)
 }
 
-func InitDevicesModel(state *config.ProgramState) devicesModel {
+func initDevicesModel(state *programState) devicesModel {
 	return devicesModel{
 		state:  state,
 		cursor: 1,

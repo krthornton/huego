@@ -1,14 +1,13 @@
-package menu
+package main
 
 import (
 	"fmt"
-	"huego/internal/config"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type mainModel struct {
-	state       *config.ProgramState
+	state       *programState
 	currentMenu tea.Model
 }
 
@@ -40,13 +39,13 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m mainModel) View() string {
 	childContent := m.currentMenu.View()
-	content := fmt.Sprintf("huego\n\n%s\n", childContent)
+	content := fmt.Sprintf("clhue\n\n%s\n", childContent)
 	return content
 }
 
-func InitMainModel(state *config.ProgramState) mainModel {
+func initMainModel(state *programState) mainModel {
 	return mainModel{
 		state:       state,
-		currentMenu: InitDiscoveryModel(state),
+		currentMenu: initDiscoveryModel(state),
 	}
 }

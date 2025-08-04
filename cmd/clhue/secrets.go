@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"encoding/json"
@@ -7,17 +7,17 @@ import (
 	"path/filepath"
 )
 
-type Hub struct {
+type hub struct {
 	IpAddress string
 	ApiKey    string
 }
 
-type Configuration struct {
-	Hubs []Hub
+type configuration struct {
+	Hubs []hub
 }
 
-func NewConfiguration() Configuration {
-	return Configuration{}
+func newConfiguration() configuration {
+	return configuration{}
 }
 
 func getConfigFilePath() string {
@@ -31,16 +31,16 @@ func getConfigFilePath() string {
 	return configFilePath
 }
 
-type ConfigFileNotExists struct {
+type configFileNotExists struct {
 	configFilePath string
 }
 
-func (e *ConfigFileNotExists) Error() string {
+func (e *configFileNotExists) Error() string {
 	return fmt.Sprintf("can't load config file: %s", e.configFilePath)
 }
 
-func LoadConfiguration() (Configuration, error) {
-	var config Configuration
+func loadConfiguration() (configuration, error) {
+	var config configuration
 	configFilePath := getConfigFilePath()
 	if _, err := os.Stat(configFilePath); err == nil {
 		// config file exists
@@ -56,14 +56,14 @@ func LoadConfiguration() (Configuration, error) {
 		return config, nil
 	} else if os.IsNotExist(err) {
 		// file does not exist
-		return config, &ConfigFileNotExists{configFilePath}
+		return config, &configFileNotExists{configFilePath}
 	} else {
 		// some other unexpected error has occurred
 		panic(fmt.Sprintf("Unexpected error: %s", err.Error()))
 	}
 }
 
-func (c Configuration) SaveConfiguration() {
+func (c configuration) saveConfiguration() {
 	configFilePath := getConfigFilePath()
 	parentDir := filepath.Dir(configFilePath)
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
@@ -88,7 +88,7 @@ func (c Configuration) SaveConfiguration() {
 	}
 }
 
-func (c *Configuration) SetApiKey(ip string, apiKey string) error {
+func (c *configuration) SetApiKey(ip string, apiKey string) error {
 	// check for and update existing API key entry
 	for i := 0; i < len(c.Hubs); i++ {
 		hub := &c.Hubs[i]
@@ -99,14 +99,14 @@ func (c *Configuration) SetApiKey(ip string, apiKey string) error {
 	}
 
 	// otherwise add new one
-	c.Hubs = append(c.Hubs, Hub{
+	c.Hubs = append(c.Hubs, hub{
 		IpAddress: ip,
 		ApiKey:    apiKey,
 	})
 	return nil
 }
 
-func (c Configuration) GetApiKey(ip string) (string, error) {
+func (c configuration) GetApiKey(ip string) (string, error) {
 	for _, savedHub := range c.Hubs {
 		if savedHub.IpAddress == ip {
 			return savedHub.ApiKey, nil
