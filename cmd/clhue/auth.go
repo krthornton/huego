@@ -33,7 +33,7 @@ type authTickMsg struct {
 
 func (m authModel) authTick() tea.Cmd {
 	return tea.Tick(1*time.Second, func(t time.Time) tea.Msg {
-		err := m.state.conn.Authenticate(m.state.config)
+		err := m.state.conn.Authenticate(m.state.keyMan)
 
 		if err != nil {
 			var unauthErr huego.UnauthenticatedError

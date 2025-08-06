@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type SecretManager interface {
+type KeyManager interface {
 	GetApiKey(ip string) (string, error)
 	SetApiKey(ip string, apiKey string) error
 }
@@ -47,9 +47,9 @@ func (e AuthenticationFailureError) Error() string {
 	return e.msg
 }
 
-func (c *HueConnection) Authenticate(secMan SecretManager) error {
+func (c *HueConnection) Authenticate(keyMan KeyManager) error {
 	// determine if we already have an API key for the given IP
-	apiKey, err := secMan.GetApiKey(c.ipAddr)
+	apiKey, err := keyMan.GetApiKey(c.ipAddr)
 	if err != nil {
 		return AuthenticationFailureError{msg: err.Error()}
 	}
@@ -86,7 +86,7 @@ func (c *HueConnection) Authenticate(secMan SecretManager) error {
 	}
 
 	// authentication successful; save API key
-	err = secMan.SetApiKey(c.ipAddr, apiKey)
+	err = keyMan.SetApiKey(c.ipAddr, apiKey)
 	if err != nil {
 		return AuthenticationFailureError{msg: err.Error()}
 	}
