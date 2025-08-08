@@ -5,12 +5,9 @@
     "tasks": [
         {
             "type": "go",
-            "label": "Build clhue cmd",
+            "label": "Build huego cmd",
             "command": "build",
-            "args": [
-                "-o", "${workspaceFolder}\\",
-                "${workspaceFolder}\\cmd\\clhue"
-            ],
+            "args": [],
             "problemMatcher": [
                 "$go"
             ],

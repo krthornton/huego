@@ -39,7 +39,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m mainModel) View() string {
 	childContent := m.currentMenu.View()
-	content := fmt.Sprintf("clhue\n\n%s\n", childContent)
+	content := fmt.Sprintf("huego\n\n%s\n", childContent)
 	return content
 }
 
