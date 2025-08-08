@@ -5,25 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Debug clhue",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}\\cmd\\clhue",
             "console": "integratedTerminal"
-        },
-        {
-            "name": "Connect to external session",
-            "type": "go",
-            "debugAdapter": "dlv-dap", // `legacy` by default
-            "request": "attach",
-            "mode": "remote",
-            "port": 43000,
-            "host": "127.0.0.1", // can skip for localhost
-            "substitutePath": [
-              { "from": "${workspaceFolder}", "to": "/home/krthornton/Projects/huego" },
-            ],
-            "preLaunchTask": "launch headless delve"
         }
     ]
 }

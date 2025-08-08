@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"huego"
+	hue "huego/internal/hue"
 	"net"
 	"time"
 
@@ -24,7 +24,7 @@ func initDiscoveryModel(state *programState) discoveryModel {
 	spin.Spinner = spinner.Dot
 
 	ipCh := make(chan *net.IP, 10)
-	huego.DiscoverHueBridges(ipCh)
+	hue.DiscoverHueBridges(ipCh)
 
 	return discoveryModel{
 		state:       state,
@@ -81,7 +81,7 @@ func (m discoveryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.discovering = true
 				m.hubs = make([]*net.IP, 0)
 				m.cursor = 1
-				huego.DiscoverHueBridges(m.ipCh)
+				hue.DiscoverHueBridges(m.ipCh)
 				cmd = discoveryDoneTick()
 			}
 		case "enter":

@@ -4,12 +4,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "launch headless delve",
-            "type": "shell",
-            "command": "dlv debug --headless --api-version=2 --listen=127.0.0.1:43000 .",
-            "isBackground": true
-        },
-        {
             "type": "go",
             "label": "Build clhue cmd",
             "command": "build",

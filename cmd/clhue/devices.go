@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	hue "huego/internal/hue"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,36 +11,38 @@ import (
 type devicesModel struct {
 	cursor int
 	state  *programState
+	lights []*hue.Light
 }
 
-type TickMsg time.Time
+type DbInitCompleteEvent struct{}
 
-func (m devicesModel) fetchDevices() tea.Msg {
-	m.state.conn.FetchDevices()
+func (m devicesModel) initDb() tea.Msg {
+	m.state.db.Initialize()
 
-	return nil
+	return DbInitCompleteEvent{}
 }
 
-func (m devicesModel) startEventListener() tea.Msg {
-	m.state.conn.StartEventListener()
+type DbPushChangesTickEvent struct{}
 
-	return nil
+func dbPushChangesTick() tea.Cmd {
+	return tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
+		return DbPushChangesTickEvent{}
+	})
 }
 
-func (m devicesModel) nextDeviceUpdateTick() tea.Cmd {
-	// starting checking every second for events to process
-	return tea.Every(time.Duration(250*time.Millisecond), func(t time.Time) tea.Msg {
-		m.state.conn.ProcessEvents()
+type DbPullChangesTickEvent struct{}
 
-		return TickMsg(t)
+func dbPullChangesTick() tea.Cmd {
+	return tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
+		return DbPullChangesTickEvent{}
 	})
 }
 
 func (m devicesModel) Init() tea.Cmd {
 	return tea.Batch(
-		m.fetchDevices,
-		m.startEventListener,
-		m.nextDeviceUpdateTick(),
+		m.initDb,
+		dbPushChangesTick(),
+		dbPullChangesTick(),
 	)
 }
 
@@ -54,47 +57,80 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down":
-			if m.cursor < len(m.state.conn.GetDevices()) {
+			if m.cursor < len(m.lights) {
 				m.cursor++
 			}
 		case "left":
 			return m, func() tea.Msg {
-				light := m.state.conn.GetDevice(m.cursor - 1)
-				if !light.IsPoweredOn() {
+				light := m.lights[m.cursor-1]
+				if !light.GetPowerState() {
 					return nil
 				}
-				currentBrightness := int(light.Brightness())
+				currentBrightness := int(light.GetBrightnessLevel())
 				desiredBrightness := ((currentBrightness / 10) - 1) * 10
 				if desiredBrightness < 0 {
 					desiredBrightness = 0
 				}
-				light.ChangeBrightness(float64(desiredBrightness))
+				light.SetBrightnessLevel(desiredBrightness)
 				return desiredBrightness
 			}
 		case "right":
 			return m, func() tea.Msg {
-				light := m.state.conn.GetDevice(m.cursor - 1)
-				if !light.IsPoweredOn() {
+				light := m.lights[m.cursor-1]
+				if !light.GetPowerState() {
 					return nil
 				}
-				currentBrightness := int(light.Brightness())
+				currentBrightness := int(light.GetBrightnessLevel())
 				desiredBrightness := ((currentBrightness / 10) + 1) * 10
 				if desiredBrightness > 100 {
 					desiredBrightness = 100
 				}
-				light.ChangeBrightness(float64(desiredBrightness))
+				light.SetBrightnessLevel(desiredBrightness)
+				return desiredBrightness
+			}
+		case "home":
+			return m, func() tea.Msg {
+				light := m.lights[m.cursor-1]
+				if !light.GetPowerState() {
+					return nil
+				}
+				desiredBrightness := 100
+				light.SetBrightnessLevel(desiredBrightness)
+				return desiredBrightness
+			}
+		case "end":
+			return m, func() tea.Msg {
+				light := m.lights[m.cursor-1]
+				if !light.GetPowerState() {
+					return nil
+				}
+				desiredBrightness := 10
+				light.SetBrightnessLevel(desiredBrightness)
 				return desiredBrightness
 			}
 		case " ":
 			return m, func() tea.Msg {
-				light := m.state.conn.GetDevice(m.cursor - 1)
-				light.ChangePowerState(!light.IsPoweredOn())
-				return light.IsPoweredOn()
+				light := m.lights[m.cursor-1]
+				light.SetPowerState(!light.GetPowerState())
+				return light.GetPowerState()
 			}
 		}
-	case TickMsg:
-		// continue checking every second
-		return m, m.nextDeviceUpdateTick()
+	case DbInitCompleteEvent:
+		resources := m.state.db.GetResourcesByType("light")
+		m.lights = make([]*hue.Light, 0)
+		for _, res := range resources {
+			if light, ok := res.(*hue.Light); ok {
+				m.lights = append(m.lights, light)
+			}
+		}
+
+		return m, nil
+	case DbPushChangesTickEvent:
+		m.state.db.PushChanges()
+		return m, dbPushChangesTick()
+	case DbPullChangesTickEvent:
+		m.state.db.PullChanges()
+		return m, dbPullChangesTick()
 	}
 
 	return m, nil
@@ -105,23 +141,22 @@ func (m devicesModel) View() string {
 	var content string
 	var footer string
 
-	devices := m.state.conn.GetDevices()
-	if len(devices) > 0 {
+	if len(m.lights) > 0 {
 		header = "Devices discovered:"
 
 		item := 1
-		for _, light := range devices {
+		for _, light := range m.lights {
 			cursorText := " "
 			if m.cursor == item {
 				cursorText = ">"
 			}
 			powerText := "On"
-			if !light.IsPoweredOn() {
+			if !light.GetPowerState() {
 				powerText = "Off"
 			}
 			content = fmt.Sprintf("%s %s %d. %s - %s", content, cursorText, item, light.Name(), powerText)
-			if light.IsPoweredOn() {
-				content = fmt.Sprintf("%s - %d%%", content, int(light.Brightness()))
+			if light.GetPowerState() {
+				content = fmt.Sprintf("%s - %d%%", content, int(light.GetBrightnessLevel()))
 			}
 			content = fmt.Sprintf("%s\n", content)
 			item++
@@ -139,5 +174,6 @@ func initDevicesModel(state *programState) devicesModel {
 	return devicesModel{
 		state:  state,
 		cursor: 1,
+		lights: nil,
 	}
 }

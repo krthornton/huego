@@ -1,4 +1,4 @@
-package huego
+package hue
 
 import (
 	"encoding/json"
@@ -47,7 +47,7 @@ func (e AuthenticationFailureError) Error() string {
 	return e.msg
 }
 
-func (c *HueConnection) Authenticate(keyMan KeyManager) error {
+func (c *BridgeConnection) Authenticate(keyMan KeyManager) error {
 	// determine if we already have an API key for the given IP
 	apiKey, err := keyMan.GetApiKey(c.ipAddr)
 	if err != nil {
@@ -68,7 +68,7 @@ func (c *HueConnection) Authenticate(keyMan KeyManager) error {
 		return AuthenticationFailureError{msg: err.Error()}
 	}
 
-	respBytes := c.MakeRequest(PostRequest, "/api", bytes)
+	respBytes := c.makeRequest(postRequest, "/api", bytes)
 	var resp authResponse
 	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {

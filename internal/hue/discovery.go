@@ -1,4 +1,4 @@
-package huego
+package hue
 
 import (
 	"io"

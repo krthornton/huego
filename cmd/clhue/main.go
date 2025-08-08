@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"huego"
+	hue "huego/internal/hue"
 	keyman "huego/internal/keyman"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,17 +10,20 @@ import (
 
 type programState struct {
 	keyMan *keyman.KeyManager
-	conn   *huego.HueConnection
+	conn   *hue.BridgeConnection
+	db     *hue.Database
 }
 
 func newProgramState(keyMan *keyman.KeyManager) *programState {
 	// create new connection and device db objects
-	conn := huego.NewHueConnection()
+	conn := hue.NewBridgeConnection()
+	db := hue.NewDatabase(conn)
 
 	// instantiate app state object to pass around
 	state := &programState{
 		keyMan: keyMan,
 		conn:   conn,
+		db:     db,
 	}
 
 	return state
@@ -32,8 +35,8 @@ func main() {
 	keyStoreFilePath := keyman.GetDefaultKeyStoreFilePath()
 	err := keyMan.LoadFromKeyStore(keyStoreFilePath)
 	if err != nil {
-		var confErr *keyman.KeyStoreNotExistsError
-		if !errors.As(err, &confErr) {
+		var missErr *keyman.KeyStoreNotExistsError
+		if !errors.As(err, &missErr) {
 			panic(err.Error())
 		}
 

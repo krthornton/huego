@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"huego"
+	hue "huego/internal/hue"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -36,7 +36,7 @@ func (m authModel) authTick() tea.Cmd {
 		err := m.state.conn.Authenticate(m.state.keyMan)
 
 		if err != nil {
-			var unauthErr huego.UnauthenticatedError
+			var unauthErr hue.UnauthenticatedError
 			if errors.As(err, &unauthErr) {
 				return authTickMsg{success: false}
 			} else {
