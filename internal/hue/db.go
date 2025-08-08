@@ -1,6 +1,9 @@
 package hue
 
+import "time"
+
 const EVENT_BUFFER_SIZE = 25
+const SYNC_DELAY = 2 * time.Second
 
 // A Database stores Hue resource (e.g., light) data locally.
 // A Database is intended to be synchronized with a Hue bridge.
@@ -36,20 +39,26 @@ func (d *Database) Initialize() error {
 	return nil
 }
 
-// Pushes any changes made to the local database to the Hue bridge.
-func (d *Database) PushChanges() error {
+// Processes local and remote changes for all resources within the Database and
+// ensures that the local data is in sync with the remote Hue bridge.
+func (d *Database) Update() error {
+	// push any local changes
 	for _, res := range d.resources {
 		if err := res.SubmitChanges(d.conn); err != nil {
 			return err
 		}
 	}
 
-	return nil
-}
-
-// Pulls any events/changes from the Hue bridge and updates the local database.
-func (d *Database) PullChanges() error {
+	// receive and process any remote updates
 	d.processEvents()
+
+	// lastly, ensure that local state and remote are in sync
+	for _, res := range d.resources {
+		if err := res.Sync(SYNC_DELAY); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

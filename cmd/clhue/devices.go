@@ -22,27 +22,18 @@ func (m devicesModel) initDb() tea.Msg {
 	return DbInitCompleteEvent{}
 }
 
-type DbPushChangesTickEvent struct{}
+type DbUpdateTickEvent struct{}
 
-func dbPushChangesTick() tea.Cmd {
+func dbUpdateTick() tea.Cmd {
 	return tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
-		return DbPushChangesTickEvent{}
-	})
-}
-
-type DbPullChangesTickEvent struct{}
-
-func dbPullChangesTick() tea.Cmd {
-	return tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
-		return DbPullChangesTickEvent{}
+		return DbUpdateTickEvent{}
 	})
 }
 
 func (m devicesModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.initDb,
-		dbPushChangesTick(),
-		dbPullChangesTick(),
+		dbUpdateTick(),
 	)
 }
 
@@ -125,12 +116,9 @@ func (m devicesModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, nil
-	case DbPushChangesTickEvent:
-		m.state.db.PushChanges()
-		return m, dbPushChangesTick()
-	case DbPullChangesTickEvent:
-		m.state.db.PullChanges()
-		return m, dbPullChangesTick()
+	case DbUpdateTickEvent:
+		m.state.db.Update()
+		return m, dbUpdateTick()
 	}
 
 	return m, nil
