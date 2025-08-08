@@ -39,9 +39,6 @@ func main() {
 		if !errors.As(err, &missErr) {
 			panic(err.Error())
 		}
-
-		// simply create a blank new key store if none exists
-		keyMan = keyman.NewKeyManager()
 	}
 
 	// init program state object to pass between menus
