@@ -1,5 +1,6 @@
 *.env
 *.swp
 __debug_bin*
-.\build
+./build
 *.exe
+./huego

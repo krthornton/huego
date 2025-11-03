@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Huego
+Exec=/home/kaleb/go/bin/huego
+Terminal=true
