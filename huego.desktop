@@ -1,5 +1,5 @@
 [Desktop Entry]
 Type=Application
 Name=Huego
-Exec=/home/kaleb/go/bin/huego
+Exec={{GOPATH}}/bin/huego
 Terminal=true
